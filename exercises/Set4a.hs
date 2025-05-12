@@ -35,7 +35,10 @@ import Data.Array
 -- you remove the Eq a => constraint from the type!
 
 allEqual :: Eq a => [a] -> Bool
-allEqual xs = todo
+allEqual (x:y:rs)
+    | x == y = allEqual (y:rs)
+    | otherwise = False
+allEqual _ = True
 
 ------------------------------------------------------------------------------
 -- Ex 2: implement the function distinct which returns True if all
@@ -50,7 +53,9 @@ allEqual xs = todo
 --   distinct [1,2] ==> True
 
 distinct :: Eq a => [a] -> Bool
-distinct = todo
+distinct xs 
+    | length xs == length (nub xs) = True
+    | otherwise = False
 
 ------------------------------------------------------------------------------
 -- Ex 3: implement the function middle that returns the middle value
@@ -63,7 +68,9 @@ distinct = todo
 --   middle 'b' 'a' 'c'  ==> 'b'
 --   middle 1 7 3        ==> 3
 
-middle = todo
+middle :: Ord a => a -> a -> a -> a
+middle x y z = go (sort [x, y, z])
+    where go [x, y, z] = y
 
 ------------------------------------------------------------------------------
 -- Ex 4: return the range of an input list, that is, the difference
@@ -78,8 +85,8 @@ middle = todo
 --   rangeOf [4,2,1,3]          ==> 3
 --   rangeOf [1.5,1.0,1.1,1.2]  ==> 0.5
 
-rangeOf :: [a] -> a
-rangeOf = todo
+rangeOf :: (Num a, Ord a) => [a] -> a
+rangeOf xs = maximum xs - minimum xs
 
 ------------------------------------------------------------------------------
 -- Ex 5: given a (non-empty) list of (non-empty) lists, return the longest
@@ -97,7 +104,18 @@ rangeOf = todo
 --   longest [[1,2,3],[4,5],[6]] ==> [1,2,3]
 --   longest ["bcd","def","ab"] ==> "bcd"
 
-longest = todo
+longest :: Ord a => [[a]] -> [a]
+-- base case?
+longest [] = []
+longest (x:xs)
+    | compareList x longest_rest == GT = x
+    | otherwise = longest_rest
+    where 
+        longest_rest = longest xs
+        compareList xs ys
+            | length xs > length ys = GT
+            | length xs == length ys && head xs < head ys = GT
+            | otherwise = LT
 
 ------------------------------------------------------------------------------
 -- Ex 6: Implement the function incrementKey, that takes a list of
@@ -113,8 +131,11 @@ longest = todo
 --   incrementKey True [(True,1),(False,3),(True,4)] ==> [(True,2),(False,3),(True,5)]
 --   incrementKey 'a' [('a',3.4)] ==> [('a',4.4)]
 
-incrementKey :: k -> [(k,v)] -> [(k,v)]
-incrementKey = todo
+incrementKey :: (Eq k, Num v) => k -> [(k,v)] -> [(k,v)]
+incrementKey target_key xs = map helper xs
+    where helper (k, v)
+              | k == target_key = (k, v+1)
+              | otherwise = (k, v)
 
 ------------------------------------------------------------------------------
 -- Ex 7: compute the average of a list of values of the Fractional
@@ -122,14 +143,9 @@ incrementKey = todo
 --
 -- There is no need to handle the empty list case.
 --
--- Hint! since Fractional is a subclass of Num, you have all
--- arithmetic operations available
---
--- Hint! you can use the function fromIntegral to convert the list
--- length to a Fractional
 
 average :: Fractional a => [a] -> a
-average xs = todo
+average xs = sum xs / (fromIntegral (length xs))
 
 ------------------------------------------------------------------------------
 -- Ex 8: given a map from player name to score and two players, return
@@ -139,8 +155,6 @@ average xs = todo
 --
 -- If a player doesn't exist in the map, you can assume they have 0 points.
 --
--- Hint: Map.findWithDefault can make this simpler
---
 -- Examples:
 --   winner (Map.fromList [("Bob",3470),("Jane",2130),("Lisa",9448)]) "Jane" "Lisa"
 --     ==> "Lisa"
@@ -148,7 +162,16 @@ average xs = todo
 --     ==> "Lisa"
 
 winner :: Map.Map String Int -> String -> String -> String
-winner scores player1 player2 = todo
+winner scores player1 player2
+    | score2 > score1 = player2
+    | otherwise = player1
+    where
+        score1 = getScore player1
+        score2 = getScore player2
+        getScore :: String -> Int
+        getScore x = case Map.lookup x scores of 
+                         Nothing -> 0
+                         (Just s) -> s
 
 ------------------------------------------------------------------------------
 -- Ex 9: compute how many times each value in the list occurs. Return
@@ -163,7 +186,31 @@ winner scores player1 player2 = todo
 --     ==> Map.fromList [(False,3),(True,1)]
 
 freqs :: (Eq a, Ord a) => [a] -> Map.Map a Int
-freqs xs = todo
+-- Challenge 1: try using Map.alter for this
+--freqs xs = go (Map.empty) xs
+--    where
+--        go result [] = result
+--        go result (x:xs) = go (Map.alter helper x result) xs
+--            where 
+--                helper :: Maybe Int -> Maybe Int
+--                helper Nothing = Just 1
+--                helper (Just x) = Just (x + 1)
+
+--freqs [] = Map.empty
+--freqs (x:xs) = Map.alter helper x (freqs xs)
+--    where 
+--        helper :: Maybe Int -> Maybe Int
+--        helper Nothing = Just 1
+--        helper (Just x) = Just (x + 1)
+
+-- Challenge 2: use foldr to process the list
+freqs xs = foldr helper Map.empty xs
+    where 
+        helper x start = Map.alter g x start
+            where 
+                g :: Maybe Int -> Maybe Int
+                g Nothing = Just 1
+                g (Just x) = Just (x + 1)
 
 ------------------------------------------------------------------------------
 -- Ex 10: recall the withdraw example from the course material. Write a
